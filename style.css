@@ -1,68 +1,359 @@
+:root {
+    --color-bg-main: #02040a;      
+    --color-bg-panel: rgba(13, 25, 48, 0.65); 
+    --color-accent: #ff2a2a;       
+    --color-accent-dark: #510100;
+    --color-text: #e2e8f0;         
+    --color-text-muted: #94a3b8;
+    --color-border: rgba(148, 163, 184, 0.1);
+    
+    /* Iluminación Avanzada */
+    --shadow-neon: 0 0 10px rgba(255, 42, 42, 0.5), 0 0 20px rgba(255, 42, 42, 0.2);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+    --glass-edge: 1px solid rgba(255, 255, 255, 0.08);
+    --glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+/* --- OPTIMIZACIÓN DE TEXTO --- */
 body {
-    font-family: 'Inter', sans-serif;
-    background: #111827; /* Gray 900 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* --- SELECCIÓN DE TEXTO "CYBER" --- */
+::selection {
+    background: rgba(255, 42, 42, 0.3);
     color: white;
+    text-shadow: 0 0 8px rgba(255, 42, 42, 0.8);
+}
+
+/* --- ANIMACIONES CINEMÁTICAS --- */
+@keyframes borderRotate {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+@keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(200%); }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-150%) skewX(-25deg); }
+    100% { transform: translateX(150%) skewX(-25deg); }
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--color-bg-main);
+    color: var(--color-text);
     height: 100vh;
     overflow: hidden;
+    letter-spacing: 0.02em;
+    background-image: radial-gradient(circle at 50% 30%, #111827 0%, #000000 70%);
 }
 
-/* Grilla del calendario */
-.time-slot-row { height: 35px; } 
-.grid-cell { 
-    border-right: 1px solid #374151; 
-    border-bottom: 1px solid #374151; 
-    position: relative; 
+/* --- UTILIDADES --- */
+.bg-theme-main { background-color: #050505; }
+
+/* Panel Glass Avanzado (Ultra Nitidez con bordes iluminados) */
+.bg-theme-panel { 
+    background: linear-gradient(180deg, rgba(22, 43, 78, 0.7) 0%, rgba(5, 10, 20, 0.9) 100%);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-glass);
 }
-.time-label { 
-    font-size: 0.7rem; 
-    color: #9ca3af; 
-    text-align: right; 
-    padding-right: 8px; 
-    border-right: 1px solid #4b5563;
-    transform: translateY(-50%);
-    top: 0;
+
+.bg-theme-accent { 
+    background: linear-gradient(135deg, #8a1c1c, #3a0000);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5), var(--glass-highlight);
+}
+
+.border-theme { border-color: var(--color-border); } 
+.text-theme-muted { color: var(--color-text-muted); }
+
+/* --- HEADER --- */
+header {
+    background: rgba(8, 10, 14, 0.85);
+    backdrop-filter: blur(30px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 100;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.9);
+}
+
+/* Línea de luz cian muy sutil bajo el header */
+header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), transparent);
+}
+
+/* Título con tracking cinematográfico */
+header h1 {
+    letter-spacing: 0.08em;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    background: linear-gradient(to bottom, #ffffff, #cbd5e1);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* Botón "Cargar Excel" (Héroe) */
+label.btn-uagrm {
+    background: linear-gradient(90deg, #7f1d1d, #991b1b, #7f1d1d);
+    background-size: 200% 200%;
+    animation: borderRotate 6s ease infinite;
+    border: 1px solid rgba(255, 100, 100, 0.4);
+    color: white;
+    text-transform: uppercase;
+    font-weight: 800;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
     position: relative;
+    overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    box-shadow: 0 4px 15px rgba(127, 29, 29, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
-/* Eventos */
+label.btn-uagrm:hover {
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+    transform: translateY(-1px);
+}
+
+label.btn-uagrm::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: skewX(-20deg);
+    animation: shimmer 3s infinite;
+    pointer-events: none;
+}
+
+/* Botones Estándar */
+button {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+button:active { transform: scale(0.97); }
+
+/* Botones Secundarios con efecto metálico pulido */
+.btn-secondary, #export-all-btn, #groups-btn, #teachers-btn, #export-img-btn, #export-pdf-btn, #clear-btn {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #cbd5e1;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.btn-secondary:hover, #export-all-btn:hover, #groups-btn:hover, #teachers-btn:hover, #export-img-btn:hover, #export-pdf-btn:hover, #clear-btn:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.4);
+    color: white;
+    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+    transform: translateY(-1px);
+}
+
+/* Botón Exportar Todo destacado */
+#export-all-btn {
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #e0e7ff;
+}
+#export-all-btn:hover {
+    background: rgba(67, 56, 202, 0.3);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+/* --- SIDEBAR --- */
+aside {
+    box-shadow: 15px 0 40px -10px rgba(0,0,0,0.8);
+    z-index: 50;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- BUSCADOR "CYBER-INPUT" --- */
+/* Contenedor relativo del buscador para efectos de foco */
+aside .relative {
+    transition: all 0.3s ease;
+}
+aside .relative:focus-within svg {
+    color: var(--color-accent) !important;
+    filter: drop-shadow(0 0 5px var(--color-accent));
+    transform: scale(1.1);
+    transition: all 0.3s ease;
+}
+
+input[type="text"]#search-box {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+    font-family: 'JetBrains Mono', 'Consolas', monospace; /* Fuente de código */
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+    border-radius: 6px !important;
+    padding-left: 2.8rem; /* Espacio para el icono */
+    caret-color: var(--color-accent); /* Cursor rojo neón */
+}
+
+input[type="text"]#search-box::placeholder {
+    color: rgba(148, 163, 184, 0.5);
+    font-family: 'Inter', sans-serif; /* Placeholder normal */
+    letter-spacing: normal;
+    font-style: italic;
+}
+
+input[type="text"]#search-box:focus {
+    background: rgba(10, 15, 30, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(0,0,0,0.5);
+    transform: translateY(-1px);
+}
+
+/* --- ITEMS DE MATERIAS --- */
+.subject-item {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.subject-item:hover {
+    background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+    border-left: 3px solid var(--color-accent);
+    padding-left: 12px;
+}
+
+/* --- CALENDARIO (Cyber Grid Mejorado) --- */
+#calendar-area {
+    background-color: #030303;
+    /* Grid técnica multicapa */
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 20px 20px;
+    box-shadow: inset 0 0 150px rgba(0,0,0,0.8); /* Viñeta fuerte */
+}
+
+.grid-cell { 
+    border-right: 1px dashed rgba(255, 255, 255, 0.06); 
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.06); 
+}
+
+.time-label { 
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    color: #64748b;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+    border-right: 2px solid rgba(59, 130, 246, 0.3);
+    background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.9));
+    letter-spacing: -0.5px;
+}
+
+/* --- EVENTOS (HOLOGRÁFICOS + SCANLINE) --- */
 .calendar-event {
     position: absolute;
     width: 96%;
     left: 2%;
     border-radius: 4px;
-    padding: 2px 4px;
+    padding: 6px 8px;
     font-size: 0.7rem;
     overflow: hidden;
     z-index: 10;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    transition: all 0.2s;
-    border-left: 4px solid rgba(255,255,255,0.4);
+    
+    /* Efecto Cristal Tintado */
+    background: linear-gradient(170deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.4) 100%);
+    border-top: 1px solid rgba(255,255,255,0.3);
+    border-bottom: 1px solid rgba(0,0,0,0.6);
+    border-left: 3px solid white; /* El color se inyecta via JS */
+    border-right: 1px solid rgba(255,255,255,0.1);
+    
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+    
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     cursor: pointer;
-    line-height: 1.1;
+    
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
+
+/* Scanline de brillo */
+.calendar-event::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: skewX(-25deg) translateX(-250%);
+    transition: none;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+}
+
 .calendar-event:hover {
-    transform: scale(1.02);
-    z-index: 20;
-    box-shadow: 0 10px 15px rgba(0,0,0,0.5);
+    transform: scale(1.05) translateY(-5px);
+    z-index: 100;
+    box-shadow: 0 20px 40px -5px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.4);
+    filter: brightness(1.15) contrast(1.1);
 }
 
-/* Sidebar, Tabs y Acordeones */
-.subject-btn {
-    transition: all 0.2s;
+.calendar-event:hover::before {
+    animation: shimmer 0.7s ease-in-out forwards;
 }
-.subject-btn:hover { background-color: #374151; }
 
-/* Scrollbars */
-.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: #111827; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+/* Texto de eventos con alto contraste */
+.calendar-event div {
+    text-shadow: 0 2px 3px rgba(0,0,0,1);
+    position: relative;
+    z-index: 2;
+}
 
-/* Modal Transiciones */
-.modal-enter { opacity: 0; transform: scale(0.95); }
-.modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms, transform 200ms; }
-.modal-exit { opacity: 1; transform: scale(1); }
-.modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 200ms, transform 200ms; }
+/* --- SCROLLBARS FUTURISTAS --- */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: rgba(255, 255, 255, 0.15); 
+    border-radius: 3px; 
+    border: 1px solid transparent;
+    background-clip: content-box;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { 
+    background: rgba(255, 255, 255, 0.4); 
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+/* --- MODALES --- */
+.modal-backdrop {
+    background: rgba(5, 5, 10, 0.9);
+    backdrop-filter: blur(12px);
+}
+
+/* Loading Overlay - Portal Dimensional */
+#loading-overlay {
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(20px);
+}
+#loading-overlay div {
+    border-width: 3px;
+    border-color: var(--color-accent) transparent var(--color-accent) transparent;
+    animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    filter: drop-shadow(0 0 15px var(--color-accent));
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }

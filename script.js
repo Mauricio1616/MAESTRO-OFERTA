@@ -1,32 +1,49 @@
 // --- CONFIGURACIÓN ---
 const CONFIG = {
-    startHour: 6,    // 06:00
-    endHour: 23,     // 23:00
-    slotHeight: 40   // Píxeles por hora
+    startHour: 6,    
+    endHour: 23,     
+    slotHeight: 80   
+};
+
+// --- PALETA DE COLORES PERSONALIZADA (UAGRM / TEMA DARK) ---
+const THEME = {
+    bgMain: "#0a0a0a",      // Fondo negro
+    bgPanel: "#162b4e",     // Azul header
+    accent: "#510100",      // Rojo
+    border: "#84939c",      // Gris azulado
+    text: "#FFFFFF"         // Blanco
 };
 
 // Estado
 let appState = {
-    allSubjects: {}, // { Nivel: [Materias] }
-    flatSubjects: [], // Array plano de todas las materias para búsqueda global
+    allSubjects: {}, 
+    flatSubjects: [], 
     selectedSubjects: [],
     currentLevel: null,
-    mode: 'normal', // 'normal', 'search', 'teacher', 'group'
+    mode: 'normal', 
     selectedTeacher: null,
-    selectedGroupData: null // { level: '...', group: '...' }
+    selectedGroupData: null
 };
 
+// --- NUEVA PALETA CORPORATIVA "EJECUTIVA" (Adiós Arcoiris) ---
 const COLORS = [
-    { bg: '#059669', border: '#34d399' }, { bg: '#2563eb', border: '#60a5fa' },
-    { bg: '#d97706', border: '#fbbf24' }, { bg: '#dc2626', border: '#f87171' },
-    { bg: '#7c3aed', border: '#a78bfa' }, { bg: '#db2777', border: '#f472b6' },
-    { bg: '#0891b2', border: '#22d3ee' }, { bg: '#4f46e5', border: '#818cf8' }
+    // 1. Rojo Institucional (Variante para contraste)
+    { bg: '#510100', border: '#7f1d1d' }, 
+    // 2. Azul Institucional
+    { bg: '#162b4e', border: '#1e40af' }, 
+    // 3. Gris Plomo (Elegante)
+    { bg: '#1f2937', border: '#374151' }, 
+    // 4. Azul Petróleo (Profundo)
+    { bg: '#0f2c38', border: '#155e75' }, 
+    // 5. Rojo Vino (Alternativo)
+    { bg: '#450a0a', border: '#7f1d1d' }, 
+    // 6. Azul Acero
+    { bg: '#1e3a8a', border: '#3b82f6' }
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
     initCalendarGrid();
     
-    // Listeners seguros
     const safeAdd = (id, evt, fn) => {
         const el = document.getElementById(id);
         if(el) el.addEventListener(evt, fn);
@@ -36,18 +53,17 @@ document.addEventListener('DOMContentLoaded', () => {
     safeAdd('download-template-btn', 'click', generateTemplate);
     safeAdd('search-box', 'input', (e) => handleGlobalSearch(e.target.value));
     safeAdd('clear-btn', 'click', clearAll);
-    safeAdd('export-img-btn', 'click', exportAsImage);
-    safeAdd('export-pdf-btn', 'click', exportAsPDF);
     
-    // Modal Docentes
+    safeAdd('export-img-btn', 'click', () => downloadSchedule('image'));
+    safeAdd('export-pdf-btn', 'click', () => downloadSchedule('pdf'));
+    safeAdd('export-all-btn', 'click', exportAllToPDF);
+    
     safeAdd('teachers-btn', 'click', () => toggleTeachersModal(true));
     safeAdd('teacher-search', 'input', (e) => renderTeachersGrid(e.target.value));
-
-    // Modal Grupos
     safeAdd('groups-btn', 'click', () => toggleGroupsModal(true));
 });
 
-// 1. INICIALIZACIÓN
+// 1. INICIALIZACIÓN DE LA GRILLA (PANTALLA)
 function initCalendarGrid() {
     const grid = document.getElementById('grid-lines');
     const container = document.getElementById('grid-container');
@@ -58,18 +74,28 @@ function initCalendarGrid() {
     
     let html = '';
     for (let h = CONFIG.startHour; h < CONFIG.endHour; h++) {
-        const timeLabel = `${h.toString().padStart(2,'0')}:00`;
-        const topPos = (h - CONFIG.startHour) * CONFIG.slotHeight;
-        
-        html += `
-            <div class="absolute w-full border-b border-gray-800 flex" style="top: ${topPos}px; height: ${CONFIG.slotHeight}px;">
-                <div class="w-[60px] relative border-r border-gray-700 bg-gray-800/30">
-                    <span class="time-label absolute right-2 -top-2.5 text-[10px] text-gray-500 font-mono bg-gray-900 px-1 rounded">${timeLabel}</span>
+        for (let m = 0; m < 60; m += 15) {
+            const timeLabel = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+            const topPos = ((h - CONFIG.startHour) + (m / 60)) * CONFIG.slotHeight;
+            const isHour = m === 0;
+            const rowHeight = CONFIG.slotHeight / 4; 
+
+            // Estilos ajustados al tema #84939c
+            const borderClass = isHour ? 'border-[#84939c]' : 'border-[#84939c]/30 border-dashed'; 
+            const textClass = isHour 
+                ? 'text-white font-bold text-[11px]' 
+                : 'text-[#84939c] text-[9px]';        
+            const labelBg = isHour ? 'bg-[#162b4e]' : ''; // Azul panel en la etiqueta de hora
+
+            html += `
+                <div class="absolute w-full border-b ${borderClass} flex box-border" style="top: ${topPos}px; height: ${rowHeight}px;">
+                    <div class="w-[60px] relative border-r border-[#84939c] ${labelBg} flex items-start justify-end pr-2 pt-0.5 shrink-0 z-10">
+                        <span class="${textClass} font-mono leading-none tracking-tight">${timeLabel}</span>
+                    </div>
+                    ${Array(7).fill('').map(() => `<div class="flex-1 border-r border-[#84939c]/30"></div>`).join('')}
                 </div>
-                ${Array(7).fill('').map(() => `<div class="flex-1 border-r border-gray-800/50"></div>`).join('')}
-            </div>
-        `;
-        html += `<div class="absolute w-full border-b border-gray-800/30 dashed pointer-events-none" style="top: ${topPos + (CONFIG.slotHeight/2)}px;"></div>`;
+            `;
+        }
     }
     grid.innerHTML = html;
 }
@@ -78,7 +104,7 @@ function initCalendarGrid() {
 function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
-    toggleLoading(true);
+    toggleLoading(true, "Leyendo archivo...");
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
@@ -127,7 +153,7 @@ function parseExcelRows(rows) {
                     });
                     if(sMap.day !== -1) map.schedules.push(sMap);
                 }
-                if(map.schedules.length === 0) { // Fallback
+                if(map.schedules.length === 0) {
                     rowStr.forEach((cell, colIdx) => {
                         if(cell === "DIA" || cell === "DÍA") map.schedules.push({ day: colIdx, start: colIdx + 1, end: colIdx + 2, room: colIdx + 3 });
                     });
@@ -183,18 +209,17 @@ function parseExcelRows(rows) {
 
                 if(!appState.allSubjects[finalLevel]) appState.allSubjects[finalLevel] = [];
                 appState.allSubjects[finalLevel].push(subjectObj);
-                appState.flatSubjects.push(subjectObj); // Guardar copia plana para búsqueda
+                appState.flatSubjects.push(subjectObj);
             }
         } catch (err) { continue; }
     }
     renderLevelTabs();
 }
 
-// 3. NAVEGACIÓN Y BÚSQUEDA GLOBAL
+// 3. UI y MODALES
 function handleGlobalSearch(term) {
     const tabsEl = document.getElementById('level-tabs');
     const bannerEl = document.getElementById('search-mode-banner');
-    
     if (term.trim().length > 0) {
         appState.mode = 'search';
         tabsEl.classList.add('hidden');
@@ -212,10 +237,9 @@ function clearSearch() {
     document.getElementById('search-mode-banner').classList.add('hidden');
     document.getElementById('teacher-mode-banner').classList.add('hidden');
     document.getElementById('group-mode-banner').classList.add('hidden');
-    renderSubjectList(); // Vuelve al nivel actual
+    renderSubjectList();
 }
 
-// 4. LÓGICA DE DOCENTES
 function toggleTeachersModal(show) {
     const modal = document.getElementById('teachers-modal');
     if(show) {
@@ -229,14 +253,13 @@ function toggleTeachersModal(show) {
 
 function renderTeachersGrid(filter = '') {
     const grid = document.getElementById('teachers-grid');
-    // Extraer docentes únicos
     const teachers = [...new Set(appState.flatSubjects.map(s => s.docente).filter(d => d && d !== 'Por Designar'))].sort();
-    
     const filtered = teachers.filter(t => t.toLowerCase().includes(filter.toLowerCase()));
     
+    // Uso de clases de tema
     grid.innerHTML = filtered.map(t => `
         <div onclick="selectTeacher('${t}')" 
-                class="p-3 bg-gray-700 hover:bg-purple-600 rounded cursor-pointer transition-colors text-xs text-gray-200 hover:text-white border border-gray-600">
+                class="p-3 bg-[#162b4e] hover:bg-[#510100] rounded cursor-pointer transition-colors text-xs text-white border border-[#84939c]">
             👨‍🏫 ${t}
         </div>
     `).join('');
@@ -244,29 +267,21 @@ function renderTeachersGrid(filter = '') {
 
 function selectTeacher(teacherName) {
     toggleTeachersModal(false);
-    // Activar Modo Docente
     appState.mode = 'teacher';
     appState.selectedTeacher = teacherName;
-    
-    // Actualizar UI
     document.getElementById('level-tabs').classList.add('hidden');
     document.getElementById('search-mode-banner').classList.add('hidden');
     document.getElementById('group-mode-banner').classList.add('hidden');
     const banner = document.getElementById('teacher-mode-banner');
     banner.classList.remove('hidden');
     document.getElementById('teacher-name-label').innerText = teacherName;
-    
-    // PROYECCIÓN AUTOMÁTICA: Seleccionar todas las materias de este docente
     const subjects = appState.flatSubjects.filter(s => s.docente === teacherName);
-    appState.selectedSubjects = []; // Limpiar horario anterior
-    
+    appState.selectedSubjects = [];
     subjects.forEach((sub, idx) => {
-        // Asignar colores cíclicos
         const color = COLORS[idx % COLORS.length];
         appState.selectedSubjects.push({ ...sub, color });
     });
-
-    updateUI(); // Esto pintará el calendario y la lista lateral
+    updateUI();
 }
 
 function exitTeacherMode() {
@@ -277,7 +292,6 @@ function exitTeacherMode() {
     renderSubjectList();
 }
 
-// 5. NUEVA LÓGICA: GRUPOS Y SEMESTRES
 function toggleGroupsModal(show) {
     const modal = document.getElementById('groups-modal');
     if(show) {
@@ -292,24 +306,15 @@ function toggleGroupsModal(show) {
 function renderGroupsGrid() {
     const grid = document.getElementById('groups-grid');
     grid.innerHTML = '';
-
-    // Obtener niveles ordenados
-    const levels = Object.keys(appState.allSubjects).sort((a,b) => {
-        const numA = parseInt(a) || 999;
-        const numB = parseInt(b) || 999;
-        return numA - numB;
-    });
-
+    const levels = Object.keys(appState.allSubjects).sort((a,b) => (parseInt(a)||999) - (parseInt(b)||999));
     levels.forEach(level => {
-        // Encontrar grupos únicos para este nivel
         const subjectsInLevel = appState.allSubjects[level];
         const uniqueGroups = [...new Set(subjectsInLevel.map(s => s.grupo))].sort();
-
         uniqueGroups.forEach(grp => {
             const el = document.createElement('div');
-            el.className = "p-3 bg-gray-700 hover:bg-orange-600 rounded cursor-pointer transition-colors border border-gray-600 flex flex-col items-center justify-center";
+            el.className = "p-3 bg-[#162b4e] hover:bg-[#510100] rounded cursor-pointer transition-colors border border-[#84939c] flex flex-col items-center justify-center";
             el.innerHTML = `
-                <span class="text-xs text-gray-400 uppercase tracking-widest text-[9px]">Semestre ${level}</span>
+                <span class="text-xs text-[#84939c] uppercase tracking-widest text-[9px]">Semestre ${level}</span>
                 <span class="text-lg font-bold text-white">Grupo ${grp}</span>
             `;
             el.onclick = () => selectGroup(level, grp);
@@ -322,25 +327,18 @@ function selectGroup(level, group) {
     toggleGroupsModal(false);
     appState.mode = 'group';
     appState.selectedGroupData = { level, group };
-
-    // Actualizar UI banners
     document.getElementById('level-tabs').classList.add('hidden');
     document.getElementById('search-mode-banner').classList.add('hidden');
     document.getElementById('teacher-mode-banner').classList.add('hidden');
-    
     const banner = document.getElementById('group-mode-banner');
     banner.classList.remove('hidden');
     document.getElementById('group-name-label').innerText = `${level} - GRP ${group}`;
-
-    // PROYECCIÓN AUTOMÁTICA
     const subjects = appState.allSubjects[level].filter(s => s.grupo === group);
     appState.selectedSubjects = [];
-    
     subjects.forEach((sub, idx) => {
         const color = COLORS[idx % COLORS.length];
         appState.selectedSubjects.push({ ...sub, color });
     });
-
     updateUI();
 }
 
@@ -352,32 +350,18 @@ function exitGroupMode() {
     renderSubjectList();
 }
 
-
-// 6. RENDERIZADO DE MATERIAS
+// 5. RENDERIZADO LATERAL
 function renderLevelTabs() {
     const container = document.getElementById('level-tabs');
-    const levels = Object.keys(appState.allSubjects).sort((a,b) => {
-        const getWeight = (lvl) => {
-            if (lvl === 'Sin asignar semestre') return 1000;
-            if (lvl === 'Talleres') return 999;
-            if (lvl === 'Electivas') return 998;
-            const num = parseInt(lvl);
-            if (!isNaN(num)) return num;
-            return 500; 
-        };
-        return getWeight(a) - getWeight(b);
-    });
-
-    if(levels.length === 0) { container.innerHTML = '<span class="text-xs text-red-400 px-2">Sin datos</span>'; return; }
-
+    const levels = Object.keys(appState.allSubjects).sort((a,b) => (parseInt(a)||999) - (parseInt(b)||999));
+    if(levels.length === 0) { container.innerHTML = '<span class="text-xs text-[#84939c] px-2">Sin datos</span>'; return; }
     container.innerHTML = levels.map(lvl => `
         <button onclick="changeLevel('${lvl}')" 
-            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all border border-gray-700
-            ${appState.currentLevel == lvl ? 'bg-cyan-600 text-white border-cyan-500 shadow-md' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}">
+            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all border border-[#84939c]
+            ${appState.currentLevel == lvl ? 'bg-[#510100] text-white border-white shadow-md' : 'bg-[#162b4e] text-[#84939c] hover:bg-[#0f1e36]'}">
             ${lvl.replace(/^\d+$/, 'Semestre $&')}
         </button>
     `).join('');
-
     if(!appState.currentLevel || !levels.includes(appState.currentLevel)) changeLevel(levels[0]);
 }
 
@@ -391,96 +375,72 @@ window.changeLevel = function(lvl) {
 function renderSubjectList(filter = '') {
     const container = document.getElementById('subjects-list');
     let listToRender = [];
-
-    // LÓGICA DE FUENTE DE DATOS
-    if (appState.mode === 'search') {
-        listToRender = appState.flatSubjects;
-    } else if (appState.mode === 'teacher') {
-        listToRender = appState.flatSubjects.filter(s => s.docente === appState.selectedTeacher);
-    } else if (appState.mode === 'group') {
-        const { level, group } = appState.selectedGroupData;
-        if(appState.allSubjects[level]) {
-            listToRender = appState.allSubjects[level].filter(s => s.grupo === group);
-        }
-    } else {
-        listToRender = appState.allSubjects[appState.currentLevel] || [];
-    }
+    if (appState.mode === 'search') listToRender = appState.flatSubjects;
+    else if (appState.mode === 'teacher') listToRender = appState.flatSubjects.filter(s => s.docente === appState.selectedTeacher);
+    else if (appState.mode === 'group') listToRender = appState.allSubjects[appState.selectedGroupData.level].filter(s => s.grupo === appState.selectedGroupData.group);
+    else listToRender = appState.allSubjects[appState.currentLevel] || [];
 
     const cleanFilter = filter.toLowerCase();
-    
-    const filtered = listToRender.filter(s => 
-        String(s.materia).toLowerCase().includes(cleanFilter) || 
-        String(s.docente).toLowerCase().includes(cleanFilter) ||
-        String(s.grupo).toLowerCase().includes(cleanFilter) ||
-        String(s.sigla).toLowerCase().includes(cleanFilter)
-    );
+    const filtered = listToRender.filter(s => String(s.materia).toLowerCase().includes(cleanFilter) || String(s.docente).toLowerCase().includes(cleanFilter) || String(s.grupo).toLowerCase().includes(cleanFilter) || String(s.sigla).toLowerCase().includes(cleanFilter));
 
-    if(filtered.length === 0) {
-        container.innerHTML = '<div class="text-center text-gray-500 mt-4 text-xs">Sin resultados</div>';
-        return;
-    }
+    if(filtered.length === 0) { container.innerHTML = '<div class="text-center text-[#84939c] mt-4 text-xs">Sin resultados</div>'; return; }
 
     const grouped = {};
-    filtered.forEach(item => {
-        const name = item.materia;
-        if(!grouped[name]) grouped[name] = [];
-        grouped[name].push(item);
-    });
-
+    filtered.forEach(item => { const name = item.materia; if(!grouped[name]) grouped[name] = []; grouped[name].push(item); });
     const sortedNames = Object.keys(grouped).sort();
 
     container.innerHTML = sortedNames.map(materiaName => {
         const groups = grouped[materiaName];
         const anySelected = groups.some(g => appState.selectedSubjects.some(s => s.id === g.id));
         const selectedCount = groups.filter(g => appState.selectedSubjects.some(s => s.id === g.id)).length;
-        
         const isExpanded = (appState.mode === 'search') || (appState.mode === 'teacher') || (appState.mode === 'group') || anySelected;
         const hiddenClass = isExpanded ? '' : 'hidden';
         const arrowRot = isExpanded ? 'rotate-180' : '';
-        const bgClass = anySelected ? 'border-cyan-600/50 bg-gray-800' : 'border-gray-700 bg-gray-800/50';
+        // Colores de la lista lateral también ajustados
+        const bgClass = anySelected ? 'border-[#510100] bg-[#162b4e]' : 'border-[#84939c] bg-[#162b4e]/50';
         const safeId = materiaName.replace(/[^a-zA-Z0-9]/g, '_') + Math.random().toString(36).substr(2,5); 
-
-        const levelBadge = (appState.mode === 'search' && groups[0]) 
-            ? `<span class="text-[9px] bg-gray-700 px-1 rounded ml-2 text-gray-400 border border-gray-600">${groups[0].nivel}</span>` 
-            : '';
-
-        const siglaBadge = groups[0].sigla ? `<span class="text-cyan-400 font-mono mr-1">[${groups[0].sigla}]</span>` : '';
+        const siglaBadge = groups[0].sigla ? `<span class="text-[#84939c] font-mono mr-1">[${groups[0].sigla}]</span>` : '';
 
         let html = `
             <div class="mb-2 border rounded-lg overflow-hidden ${bgClass} transition-colors">
                 <div onclick="toggleAccordion('${safeId}')"
-                        class="p-3 cursor-pointer flex justify-between items-center hover:bg-gray-700/50 transition-colors select-none">
+                        class="p-3 cursor-pointer flex justify-between items-center hover:bg-[#0a0a0a]/50 transition-colors select-none">
                     <div class="overflow-hidden">
                         <h4 class="font-bold text-xs text-gray-200 truncate pr-2 flex items-center">
-                            ${siglaBadge} ${materiaName} ${levelBadge}
+                            ${siglaBadge} ${materiaName}
                         </h4>
-                        <p class="text-[10px] text-gray-500">${groups.length} grupos</p>
+                        <p class="text-[10px] text-[#84939c]">${groups.length} grupos</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        ${selectedCount > 0 ? `<span class="bg-cyan-600 text-[9px] px-1.5 py-0.5 rounded-full text-white font-bold">${selectedCount}</span>` : ''}
-                        <svg id="arrow-${safeId}" class="w-4 h-4 text-gray-500 transform transition-transform duration-200 ${arrowRot}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        ${selectedCount > 0 ? `<span class="bg-[#510100] text-[9px] px-1.5 py-0.5 rounded-full text-white font-bold">${selectedCount}</span>` : ''}
+                        <svg id="arrow-${safeId}" class="w-4 h-4 text-[#84939c] transform transition-transform duration-200 ${arrowRot}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                 </div>
-                <div id="list-${safeId}" class="${hiddenClass} bg-black/20 border-t border-gray-700/50">
+                <div id="list-${safeId}" class="${hiddenClass} bg-[#0a0a0a]/30 border-t border-[#84939c]/50">
         `;
-
         html += groups.map(sub => {
             const isSelected = appState.selectedSubjects.some(s => s.id === sub.id);
-            const color = isSelected ? appState.selectedSubjects.find(s => s.id === sub.id).color : null;
-            const borderStyle = isSelected ? `border-left-color: ${color.border}; background-color: rgba(31, 41, 55, 0.8);` : 'border-left-color: transparent;';
+            // Si está seleccionado, buscamos su color en el estado
+            let color = null;
+            if(isSelected) {
+                const found = appState.selectedSubjects.find(s => s.id === sub.id);
+                if(found) color = found.color;
+            }
+            
+            const borderStyle = isSelected && color ? `border-left-color: ${color.border}; background-color: rgba(22, 43, 78, 0.8);` : 'border-left-color: transparent;';
             
             return `
                     <div onclick="toggleSubject('${sub.id}')" 
-                            class="p-2 border-b border-gray-700/30 last:border-0 cursor-pointer transition-all hover:bg-white/5 relative group
+                            class="p-2 border-b border-[#84939c]/30 last:border-0 cursor-pointer transition-all hover:bg-white/5 relative group
                             ${isSelected ? 'pl-3' : 'pl-4 opacity-75 hover:opacity-100 hover:pl-3'}"
                             style="${borderStyle} border-left-width: 4px;">
                         <div class="flex justify-between items-center mb-1">
-                            <span class="text-[10px] font-mono bg-gray-800 text-cyan-400 px-1.5 rounded border border-gray-700 shadow-sm">Grp ${sub.grupo || '?'}</span>
+                            <span class="text-[10px] font-mono bg-[#0a0a0a] text-[#84939c] px-1.5 rounded border border-[#84939c] shadow-sm">Grp ${sub.grupo || '?'}</span>
                         </div>
                         <p class="text-[10px] text-gray-300 truncate font-medium mb-1">${sub.docente}</p>
                         <div class="flex flex-wrap gap-1">
                             ${sub.schedules.map(s => 
-                                `<span class="text-[9px] bg-gray-900/80 px-1.5 rounded text-gray-400 border border-gray-700/50">
+                                `<span class="text-[9px] bg-[#0a0a0a] px-1.5 rounded text-[#84939c] border border-[#84939c]/50">
                                     ${s.day.substring(0,3)} ${s.start}
                                 </span>`
                             ).join('')}
@@ -508,17 +468,13 @@ window.toggleAccordion = function(id) {
 window.toggleSubject = function(id) {
     const subject = appState.flatSubjects.find(s => s.id === id);
     if(!subject) return;
-
     const idx = appState.selectedSubjects.findIndex(s => s.id === id);
     if(idx > -1) {
         appState.selectedSubjects.splice(idx, 1);
     } else {
         if (appState.mode !== 'teacher' && appState.mode !== 'group') {
             const conflict = findConflict(subject);
-            if(conflict) {
-                alert(`⚠️ CHOQUE DE HORARIO\n\nCon: ${conflict.with}\nDía: ${conflict.day} Hora: ${conflict.time}`);
-                return;
-            }
+            if(conflict) { alert(`⚠️ CHOQUE DE HORARIO\n\nCon: ${conflict.with}\nDía: ${conflict.day} Hora: ${conflict.time}`); return; }
         }
         const color = COLORS[appState.selectedSubjects.length % COLORS.length];
         appState.selectedSubjects.push({ ...subject, color });
@@ -535,9 +491,7 @@ function findConflict(newSub) {
                     const end1 = timeToMin(s1.end);
                     const start2 = timeToMin(s2.start);
                     const end2 = timeToMin(s2.end);
-                    if(Math.max(start1, start2) < Math.min(end1, end2)) {
-                        return { with: exist.materia, day: s1.day, time: `${s1.start}-${s1.end}` };
-                    }
+                    if(Math.max(start1, start2) < Math.min(end1, end2)) return { with: exist.materia, day: s1.day, time: `${s1.start}-${s1.end}` };
                 }
             }
         }
@@ -547,8 +501,7 @@ function findConflict(newSub) {
 
 function updateUI() {
     document.getElementById('selected-count').innerText = appState.selectedSubjects.length;
-    const searchTerm = appState.mode === 'search' ? document.getElementById('search-box').value : '';
-    renderSubjectList(searchTerm);
+    renderSubjectList(appState.mode === 'search' ? document.getElementById('search-box').value : '');
     drawEvents();
 }
 
@@ -563,16 +516,19 @@ function drawEvents() {
             if(dayIdx === -1) return;
             const startMin = timeToMin(sched.start);
             const endMin = timeToMin(sched.end);
+            if (isNaN(startMin) || isNaN(endMin)) return;
+
             const topPx = ((startMin/60) - CONFIG.startHour) * CONFIG.slotHeight;
             const heightPx = ((endMin - startMin) / 60) * CONFIG.slotHeight;
-            const leftPercent = (dayIdx * (100/7)); 
-
+            
             const el = document.createElement('div');
             el.className = 'calendar-event pointer-events-auto flex flex-col justify-center';
+            el.style.zIndex = '20'; 
             el.style.top = `${topPx}px`;
             el.style.height = `${heightPx}px`;
-            el.style.left = `calc(60px + ${leftPercent}% + 2px)`;
-            el.style.width = `calc((100% - 60px) / 7 - 4px)`;
+            el.style.left = `calc(60px + ((100% - 60px) / 7) * ${dayIdx} + 2px)`;
+            el.style.width = `calc(((100% - 60px) / 7) - 4px)`;
+            
             el.style.backgroundColor = sub.color.bg;
             el.style.borderLeftColor = sub.color.border;
             
@@ -580,6 +536,7 @@ function drawEvents() {
                 <div class="font-bold truncate text-white drop-shadow-md text-[10px] leading-tight">
                     <span class="font-mono text-cyan-200 text-[9px] mr-1">${sub.sigla}</span>${sub.materia}
                 </div>
+                <div class="text-[9px] text-yellow-200 font-bold truncate leading-tight mt-0.5 mb-0.5">${sched.start} - ${sched.end}</div>
                 <div class="text-[9px] text-white/90 truncate leading-tight font-medium">${sub.docente}</div>
                 <div class="text-[9px] text-white/80 truncate leading-tight">${sub.grupo} - ${sched.room}</div>
             `;
@@ -589,7 +546,6 @@ function drawEvents() {
     });
 }
 
-// UTILS
 function normalizeDay(day) {
     if(!day) return "";
     const d = day.trim().toLowerCase();
@@ -617,6 +573,7 @@ function formatExcelTime(val) {
 function timeToMin(time) {
     if(!time) return 0;
     const [h, m] = time.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return 0;
     return (h*60) + m;
 }
 function clearAll() {
@@ -627,8 +584,10 @@ function clearAll() {
         updateUI();
     }
 }
-function toggleLoading(show) {
+function toggleLoading(show, text = "Procesando...") {
     const el = document.getElementById('loading-overlay');
+    const txt = document.getElementById('loading-text');
+    if(txt) txt.innerText = text;
     show ? el.classList.remove('hidden') : el.classList.add('hidden');
 }
 function generateTemplate() {
@@ -639,93 +598,262 @@ function generateTemplate() {
     XLSX.writeFile(wb, "Plantilla_Planificador.xlsx");
 }
 
-// --- NUEVA LÓGICA DE EXPORTACIÓN ROBUSTA (FULL CLONE) ---
-async function getCalendarCanvas() {
-    toggleLoading(true);
+// --- GENERADOR CANVAS CON TEMA PERSONALIZADO ---
+function generateCanvasForSubjects(subjects, titleText = null) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
     
-    // 1. Clonar el contenedor PRINCIPAL (calendar-area) completo
-    // Esto asegura que la cabecera (calendar-header) y el cuerpo (schedule-scroll) mantengan su relación
-    const originalElement = document.getElementById('calendar-area');
-    const clone = originalElement.cloneNode(true);
-    
-    // 2. Configurar el clon para ser "invisible" pero renderizable y expandido
-    clone.style.position = 'fixed';
-    clone.style.top = '0';
-    clone.style.left = '0';
-    clone.style.width = '1600px'; // Ancho fijo HD para evitar scroll horizontal
-    clone.style.height = 'auto';  // Altura automática
-    clone.style.zIndex = '-9999'; // Detrás de todo
-    clone.style.overflow = 'visible'; // Importante: dejar ver todo el contenido
-    clone.style.visibility = 'visible'; // html2canvas necesita que sea visible
-    
-    // 3. Modificar el contenedor de scroll interno del clon para que muestre todo
-    const scrollArea = clone.querySelector('#schedule-scroll');
-    if(scrollArea) {
-        scrollArea.style.overflow = 'visible';
-        scrollArea.style.height = 'auto';
-        scrollArea.style.maxHeight = 'none';
-    }
+    // Altura Dinámica
+    let minTime = CONFIG.startHour * 60; 
+    let maxTime = CONFIG.endHour * 60;
 
-    // 4. Asegurarnos que el contenedor de la grilla interna también se expanda
-    const gridContainer = clone.querySelector('#grid-container');
-    if(gridContainer) {
-        gridContainer.style.height = 'auto';
-    }
-    
-    document.body.appendChild(clone);
-    
-    // Pequeña pausa para asegurar que el navegador renderice el clon
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    try {
-        // 5. Capturar con html2canvas
-        const canvas = await html2canvas(clone, {
-            backgroundColor: "#111827",
-            scale: 2, // Calidad x2 (Retina like)
-            useCORS: true,
-            logging: false,
-            width: 1600, // Forzar ancho de captura
-            windowWidth: 1600
+    if (subjects.length > 0) {
+        let earliest = 24 * 60; 
+        let latest = 0;
+        subjects.forEach(sub => {
+            sub.schedules.forEach(s => {
+                const sMin = timeToMin(s.start);
+                const eMin = timeToMin(s.end);
+                if (sMin > 0 && sMin < earliest) earliest = sMin;
+                if (eMin > latest) latest = eMin;
+            });
         });
-        
-        document.body.removeChild(clone);
-        toggleLoading(false);
-        return canvas;
-    } catch (e) {
-        if(document.body.contains(clone)) document.body.removeChild(clone);
-        toggleLoading(false);
-        alert("Error al generar imagen: " + e.message);
-        throw e;
+        if (earliest < 24*60 && latest > 0) {
+            let startHourCalc = Math.floor(earliest / 60);
+            if (startHourCalc > 0) startHourCalc -= 1; 
+            let endHourCalc = Math.ceil(latest / 60);
+            if (endHourCalc < 24) endHourCalc += 1;
+            minTime = startHourCalc * 60;
+            maxTime = endHourCalc * 60;
+        }
     }
+
+    const startH = Math.max(0, Math.floor(minTime / 60));
+    const endH = Math.min(24, Math.ceil(maxTime / 60));
+    
+    // HD
+    const width = 2000;
+    const headerHeight = 100;
+    const hourHeight = 120; 
+    const validTotalHours = Math.max(1, endH - startH);
+    const bodyHeight = validTotalHours * hourHeight;
+    const yOffset = titleText ? 80 : 0;
+    const totalHeight = headerHeight + bodyHeight + yOffset;
+    
+    canvas.width = width;
+    canvas.height = totalHeight;
+
+    // 1. Fondo (Negro #0a0a0a)
+    ctx.fillStyle = THEME.bgMain; 
+    ctx.fillRect(0, 0, width, totalHeight);
+
+    // Título Superior
+    if (titleText) {
+        ctx.fillStyle = THEME.bgPanel;
+        ctx.fillRect(0, 0, width, yOffset);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 40px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(titleText, width / 2, yOffset / 2);
+    }
+
+    const getY = (timeStr) => {
+        const min = timeToMin(timeStr);
+        const startOffsetMin = startH * 60;
+        return yOffset + headerHeight + ((min - startOffsetMin) / 60) * hourHeight;
+    };
+
+    let timeLabels = [];
+    for(let h = startH; h < endH; h++) {
+        for(let m = 0; m < 60; m += 15) {
+            timeLabels.push({ 
+                time: `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`, 
+                min: h * 60 + m, 
+                type: m === 0 ? 'hour' : 'quarter' 
+            });
+        }
+    }
+    timeLabels.push({ time: `${endH}:00`, min: endH * 60, type: 'hour' });
+
+    // Grid
+    const colWidth = (width - 120) / 7; 
+    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    // Cabecera (Azul #162b4e)
+    ctx.fillStyle = THEME.bgPanel;
+    ctx.fillRect(0, yOffset, width, headerHeight);
+    
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = THEME.border; // Texto Gris azulado
+    ctx.font = "bold 24px Arial, sans-serif";
+    ctx.fillText("HORA", 60, yOffset + headerHeight/2);
+    
+    days.forEach((day, i) => {
+        const x = 120 + (i * colWidth);
+        ctx.fillStyle = THEME.text; // Blanco para días
+        ctx.fillText(day, x + (colWidth/2), yOffset + headerHeight/2);
+        
+        ctx.beginPath();
+        ctx.strokeStyle = THEME.border;
+        ctx.lineWidth = 2;
+        ctx.moveTo(x, yOffset);
+        ctx.lineTo(x, totalHeight);
+        ctx.stroke();
+    });
+
+    // Líneas
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle"; 
+
+    timeLabels.forEach(lbl => {
+        const y = getY(lbl.time);
+        
+        if (lbl.type === 'hour') {
+            ctx.fillStyle = THEME.text; // Blanco brillante para hora
+            ctx.font = "bold 24px Arial, monospace";
+            ctx.fillText(lbl.time, 110, y);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = THEME.border; 
+            ctx.lineWidth = 1;
+            ctx.setLineDash([]);
+            ctx.moveTo(120, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = THEME.border; // Gris azulado para 15 min
+            ctx.font = "16px Arial, monospace"; 
+            ctx.fillText(lbl.time, 110, y);
+
+            ctx.beginPath();
+            ctx.strokeStyle = THEME.border; 
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]); 
+            ctx.moveTo(120, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    });
+
+    // Materias
+    ctx.textBaseline = "top"; 
+
+    subjects.forEach(sub => {
+        sub.schedules.forEach(sched => {
+            const dayIndex = days.indexOf(sched.day);
+            if(dayIndex === -1) return;
+            const startMin = timeToMin(sched.start);
+            const endMin = timeToMin(sched.end);
+            if (startMin < (startH * 60)) return; 
+            const startOffsetMin = (startH * 60);
+            
+            const startY = yOffset + headerHeight + ((startMin - startOffsetMin) / 60) * hourHeight;
+            const durationMin = endMin - startMin;
+            const height = (durationMin / 60) * hourHeight;
+            const x = 120 + (dayIndex * colWidth);
+            
+            const gap = 4;
+            const boxX = x + gap;
+            const boxY = startY + 1;
+            const boxW = colWidth - (gap * 2);
+            const boxH = height - 2;
+
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(boxX + 6, boxY + 6, boxW, boxH);
+
+            ctx.fillStyle = sub.color.bg;
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+            
+            ctx.strokeStyle = "rgba(255,255,255,0.4)"; 
+            ctx.lineWidth = 2;
+            ctx.strokeRect(boxX, boxY, boxW, boxH);
+            
+            ctx.fillStyle = sub.color.border;
+            ctx.fillRect(boxX, boxY, 10, boxH);
+
+            ctx.fillStyle = "white";
+            ctx.textAlign = "left";
+            
+            const fontSize = Math.max(14, Math.min(20, height / 5));
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            
+            let textY = startY + 10;
+            ctx.fillText(`[${sub.sigla}] ${sub.materia}`, boxX + 18, textY, boxW - 24);
+            
+            textY += fontSize + 6;
+            ctx.font = `bold ${fontSize - 2}px Arial, sans-serif`;
+            ctx.fillStyle = "#fef08a"; // Amarillo claro para hora
+            ctx.fillText(`${sched.start} - ${sched.end}`, boxX + 18, textY, boxW - 24);
+            
+            textY += fontSize + 4;
+            ctx.font = `${fontSize - 2}px Arial, sans-serif`;
+            ctx.fillStyle = "rgba(255,255,255,0.95)";
+            ctx.fillText(sub.docente, boxX + 18, textY, boxW - 24);
+            
+            textY += fontSize + 2;
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.fillText(`Aula: ${sched.room} (Grp ${sub.grupo})`, boxX + 18, textY, boxW - 24);
+        });
+    });
+
+    return canvas;
 }
 
-async function exportAsImage() {
-    try {
-        const canvas = await getCalendarCanvas();
+function downloadSchedule(format) {
+    if(appState.selectedSubjects.length === 0) { alert("Horario vacío. Agrega materias."); return; }
+    toggleLoading(true, "Generando...");
+    const canvas = generateCanvasForSubjects(appState.selectedSubjects);
+    if (format === 'image') {
         const link = document.createElement('a');
-        link.download = 'mi_horario_completo.png';
-        link.href = canvas.toDataURL();
+        link.download = 'mi_horario_hd.png';
+        link.href = canvas.toDataURL('image/png');
         link.click();
-    } catch(e) { console.error(e); }
+        toggleLoading(false);
+    } else if (format === 'pdf') {
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = canvas.width * 0.264583; 
+        const pdfHeight = canvas.height * 0.264583;
+        const pdf = new window.jspdf.jsPDF({ orientation: pdfWidth > pdfHeight ? 'l' : 'p', unit: 'mm', format: [pdfWidth, pdfHeight] });
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save('mi_horario_hd.pdf');
+        toggleLoading(false);
+    }
 }
 
-async function exportAsPDF() {
+async function exportAllToPDF() {
+    const levels = Object.keys(appState.allSubjects);
+    if(levels.length === 0) { alert("No hay datos cargados para exportar."); return; }
+    if(!confirm(`Se generará un PDF con todos los grupos de ${levels.length} semestres. Esto puede tardar unos segundos. ¿Continuar?`)) return;
+    toggleLoading(true, "Generando PDF Masivo...");
+    await new Promise(r => setTimeout(r, 100));
     try {
-        const canvas = await getCalendarCanvas();
-        const imgData = canvas.toDataURL('image/png');
-        
-        // Conversión a PDF manteniendo la relación de aspecto exacta (Poster PDF)
-        const pxToMm = 0.264583;
-        const imgWidthMm = canvas.width * pxToMm;
-        const imgHeightMm = canvas.height * pxToMm;
-
-        const pdf = new window.jspdf.jsPDF({
-            orientation: imgWidthMm > imgHeightMm ? 'l' : 'p',
-            unit: 'mm',
-            format: [imgWidthMm, imgHeightMm]
-        });
-
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidthMm, imgHeightMm);
-        pdf.save('mi_horario_completo.pdf');
-    } catch(e) { console.error(e); }
+        const pdf = new window.jspdf.jsPDF('l', 'mm', 'a4'); 
+        let pageAdded = false;
+        const sortedLevels = levels.sort((a,b) => (parseInt(a)||999) - (parseInt(b)||999));
+        for (const level of sortedLevels) {
+            const subjectsInLevel = appState.allSubjects[level];
+            const groups = {};
+            subjectsInLevel.forEach(s => { const g = s.grupo; if(!groups[g]) groups[g] = []; groups[g].push(s); });
+            const sortedGroups = Object.keys(groups).sort();
+            for (const grp of sortedGroups) {
+                const groupSubjects = groups[grp];
+                const subjectsWithColors = groupSubjects.map((s, i) => ({ ...s, color: COLORS[i % COLORS.length] }));
+                const title = `Semestre ${level} - Grupo ${grp}`;
+                const canvas = generateCanvasForSubjects(subjectsWithColors, title);
+                const imgData = canvas.toDataURL('image/jpeg', 0.75);
+                const pdfWidth = canvas.width * 0.264583;
+                const pdfHeight = canvas.height * 0.264583;
+                if (pageAdded) { pdf.addPage([pdfWidth, pdfHeight], pdfWidth > pdfHeight ? 'l' : 'p'); } else { pdf.addPage([pdfWidth, pdfHeight], pdfWidth > pdfHeight ? 'l' : 'p'); pageAdded = true; }
+                const pageCount = pdf.internal.getNumberOfPages();
+                pdf.setPage(pageCount);
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                canvas.width = 1; canvas.height = 1;
+            }
+        }
+        pdf.deletePage(1);
+        pdf.save('Horarios_Completos_UAGRM.pdf');
+    } catch (e) { console.error(e); alert("Error al generar PDF masivo: " + e.message); } finally { toggleLoading(false); }
 }
